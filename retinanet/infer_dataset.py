@@ -18,32 +18,38 @@ import skimage.color
 class Infer_Dataset(Dataset):
     """CSV dataset."""
 
-    def __init__(self, folder_path, class_input, filter_ext=None, transform=None):
+    def __init__(self, folder_path, class_list=None, class_n=None, filter_ext=None, transform=None):
         """
         Args:
             folder_path (string): path to folder with images to visualize or inference
-            class_input (string): CSV file with class list OR integer of number of classes
+            class_list (string, optional): CSV file with class list
+            class_n (string, optional): integer of number of classes (insted of class_list)
             filter_ext (string, optional): all file extentions to exclude from the folder files
         """
         self.folder_path = folder_path
         self.image_names = sorted(os.listdir(folder_path))
         #self.train_file = train_file
-        self.class_input = class_input
+        self.class_list = class_list
+        self.class_n = class_n
         self.transform = transform
 
 
         # parse the provided class file
-        try:
-            if self.class_input[-4:].lower() == '.csv':
-                with self._open_for_csv(self.class_input) as file:
+        if self.class_list is not None:
+            try:
+                with self._open_for_csv(self.class_list) as file:
                     self.classes = self.load_classes(csv.reader(file, delimiter=','))
-            else:
-                self.n_classes = self._parse(self.class_input, int, 'class input should be .csv OR int(num_classes). {}')
-                self.classes = {}
-                for i in range(self.n_classes):
-                    self.classes[str(i)] = i
-        except ValueError as e:
-            raise (ValueError('invalid CSV class input: {}: {}'.format(self.class_input, e)))
+            except ValueError as e:
+                raise (ValueError('invalid CSV class file: {}: {}'.format(self.class_list, e)))
+
+        elif self.class_n is not None:
+            self.n_classes = self._parse(self.class_input, int, 'class input should be .csv OR int(num_classes). {}')
+            self.classes = {}
+            for i in range(self.n_classes):
+                self.classes['c'+str(i)] = i
+        else:
+            raise (ValueError('invalid class input: should be csv file OR int(num_classes). {} {}'.format(self.class_list, e)))
+
 
         self.labels = {}
         for key, value in self.classes.items():
@@ -132,6 +138,8 @@ class Infer_Dataset(Dataset):
 
     def num_classes(self):
         return max(self.classes.values()) + 1
+    def image_aspect_ratio(self, image_index):
+        return 1 # Batch size=1 so sampler is not relevant
 
 
 

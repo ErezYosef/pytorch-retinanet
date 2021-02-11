@@ -16,7 +16,7 @@ import skimage.color
 
 
 class Infer_Dataset(Dataset):
-    """CSV dataset."""
+    """folder dataset."""
 
     def __init__(self, folder_path, class_list=None, class_n=None, filter_ext=None, transform=None):
         """
@@ -43,7 +43,7 @@ class Infer_Dataset(Dataset):
                 raise (ValueError('invalid CSV class file: {}: {}'.format(self.class_list, e)))
 
         elif self.class_n is not None:
-            self.n_classes = self._parse(self.class_input, int, 'class input should be .csv OR int(num_classes). {}')
+            self.n_classes = self._parse(self.class_n, int, 'class input should be .csv OR int(num_classes). {}')
             self.classes = {}
             for i in range(self.n_classes):
                 self.classes['c'+str(i)] = i
@@ -113,8 +113,9 @@ class Infer_Dataset(Dataset):
         try:
             img = self.load_image_path(img_path)
         except:
-            return {'img': None, 'annot': None}
-        annot = None #self.load_annotations(idx)
+            raise TypeError('Can not open image \'{}\'. if it is not an image add it to the \'exclude_ext\''.format(img_path))
+
+        annot = np.zeros((0, 5))
         sample = {'img': img, 'annot': annot}
         if self.transform:
             sample = self.transform(sample)
@@ -141,27 +142,3 @@ class Infer_Dataset(Dataset):
     def image_aspect_ratio(self, image_index):
         return 1 # Batch size=1 so sampler is not relevant
 
-
-
-
-def collater_infer(data):
-    imgs = [s['img'] for s in data]
-    annots = [s['annot'] for s in data]
-    scales = [s['scale'] for s in data]
-
-    widths = [int(s.shape[0]) for s in imgs]
-    heights = [int(s.shape[1]) for s in imgs]
-    batch_size = len(imgs)
-
-    max_width = np.array(widths).max()
-    max_height = np.array(heights).max()
-
-    padded_imgs = torch.zeros(batch_size, max_width, max_height, 3)
-
-    for i in range(batch_size):
-        img = imgs[i]
-        padded_imgs[i, :int(img.shape[0]), :int(img.shape[1]), :] = img
-
-    padded_imgs = padded_imgs.permute(0, 3, 1, 2)
-
-    return {'img': padded_imgs, 'annot': annots, 'scale': scales}

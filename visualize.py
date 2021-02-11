@@ -16,7 +16,7 @@ from torchvision import datasets, models, transforms
 
 from retinanet.dataloader import CocoDataset, CSVDataset, collater, Resizer, AspectRatioBasedSampler, Augmenter, \
 	UnNormalizer, Normalizer
-from retinanet.infer_dataset import Infer_Dataset
+from retinanet.infer_dataset import Infer_Dataset,collater_infer
 
 assert torch.__version__.split('.')[0] == '1'
 
@@ -45,6 +45,7 @@ def main(args=None):
 	elif parser.dataset == 'folder':
 		dataset_val = Infer_Dataset(folder_path=parser.folder_path, class_list=parser.csv_classes, class_n=parser.classes_num,
 									filter_ext=parser.exclude_ext, transform=transforms.Compose([Normalizer(), Resizer()]))
+		collater = collater_infer
 	else:
 		raise ValueError('Dataset type not understood (must be csv or coco), exiting.')
 
